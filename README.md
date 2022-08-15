@@ -2,6 +2,17 @@
 This repo contains the R code used to analyse the effect of data sampling on the response curves estimated by species distribution models.
 
 Scripts and content:
-- Wide_species: R code to gather climatic and topographic data for the analyses, and for generating _Dianthus sperandii_ (species with wide distribution). Also, the script includes the code to: 1) simulate the sampling of species occurrence data; 2) get and compare results (bias, variance and mean squared error); and create diffetent plots (maps of sampling effort, plot showing correlation between true _vs_ estimated occurrence probabilities, plot comparing true _vs_ simulated species response curves).
-- Rare_species: basically, same content as in 'Wide_species', but the code is to generate _Dianthus tundrae_ (species with narrow distribution), and then get and compare results as done for _D. sperandii_.
-- Prop_stratified, Env_uniform, Systematic, Proximity, Topograhic: R scripts to perform the different sampling strategies in R. 
+- Bio_Elev_data: script reporting code for getting and processing elevation and bioclimatic (CHELSA) data.
+- Sampling_strategies: script reporting code for generating data and functions used to simulate the tested sampling approaches (random, proportional stratified, road proximity, uniform within the environmental space, systematic within the geographic space, topographic).
+- Dianthus_sperandii, Dianthus_tundrae: scripts reporting code used for simulations related to the virtual specis with wide (D. sperandii) and narrow (D. tundrae) geographic distribution.
+- Figures: script reporting code for reproducing some of the figures presented in the manuscript (e.g., simulated species' response curves and geographic distributions). 
+
+R version used: R version 4.1.0 (2021-05-18)
+
+Version of the main R packages used:
+- raster ‘3.5.9’
+- sf ‘1.0.0’
+- ggplot2 ‘3.3.5’
+- elevatr ‘0.4.2’
+- car ‘3.0.11’
+
