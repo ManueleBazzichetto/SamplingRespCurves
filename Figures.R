@@ -22,6 +22,7 @@ Plot_bio1_fig <- ggplot(Plot_bio1, aes(x = Temperature, y = Proba, col = Species
   geom_line(lwd = 2) +
   scale_color_manual(values = c("#DCE319FF", "#39568CFF")) +
   ylab("Occurrence probability") + ylim(c(0, 1)) +
+  xlab("Temperature (°C)") +
   theme_pubr() +
   theme(legend.position = "top", axis.title = element_text(size = 14),
         axis.text = element_text(size = 10),
@@ -32,6 +33,7 @@ Plot_bio12_fig <- ggplot(Plot_bio12, aes(x = Precipitation, y = Proba, col = Spe
   geom_line(lwd = 2) +
   scale_color_manual(values = c("#DCE319FF", "#39568CFF")) +
   ylab("Occurrence probability") + ylim(c(0, 1)) +
+  xlab("Precipitation (mm)") +
   theme_pubr() +
   theme(legend.position = "top", axis.title = element_text(size = 14),
         axis.text = element_text(size = 10),
