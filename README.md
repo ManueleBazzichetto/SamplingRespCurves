@@ -1,5 +1,5 @@
 # SamplingRespCurves
-This repo contains the R code used to analyse the effect of sampling strategy on the response curves estimated by species distribution models.
+This repo contains the R code used to analyse the effect of sampling strategy on the precision (variance) and accuracy (bias) of response curves estimated by species distribution models.
 
 Scripts and content:
 - **Bio_Elev_data**: script reporting code for getting and processing elevation and bioclimatic (CHELSA) data;
