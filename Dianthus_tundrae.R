@@ -1,4 +1,4 @@
-##Code to replicate results presented in the manuscript "Sampling strategies matter to accurately estimate response curves’ parameters in species distribution models"
+##Code to replicate results presented in the manuscript "Sampling strategy matters to accurately estimate response curves’ parameters in species distribution models"
 ##Simulations for Dianthus tundrae (virtual species with restricted distribution)
 
 ##!!Please, load packages reported at the top of the "Bio_Elev_data" script!!
@@ -612,13 +612,13 @@ True_pred_tundrae.2$Proba <- unlist(lapply(c("Bio1", "Bio12"), function(nm) {
   if(nm %in% "Bio1") {
     mat.prd <- cbind(1, True_pred_tundrae.2[True_pred_tundrae.2$var == "Bio1", "var_val", drop = T],
                      (True_pred_tundrae.2[True_pred_tundrae.2$var == "Bio1", "var_val", drop = T]^2),
-                     mean(True_pred_tundrae.2[True_pred_tundrae.2$var == "Bio12", "var_val", drop = T]))
+                     MeanPrec.AOI)
     #colnames(mat.prd) <- NULL
     pred_val <- plogis(mat.prd%*%unname(True_coef.T.nm))
     return(pred_val)
   } else {
-    mat.prd <- cbind(1, mean(True_pred_tundrae.2[True_pred_tundrae.2$var == "Bio1", "var_val", drop = T]),
-                     median(True_pred_tundrae.2[True_pred_tundrae.2$var == "Bio1", "var_val", drop = T])^2,
+    mat.prd <- cbind(1, MeanTemp.AOI,
+                     MeanTemp.AOI^2,
                      True_pred_tundrae.2[True_pred_tundrae.2$var == "Bio12", "var_val", drop = T])
     #colnames(mat.prd) <- NULL
     pred_val <- plogis(mat.prd%*%unname(True_coef.T.nm))
@@ -631,7 +631,9 @@ True_pred_tundrae.2$Proba <- unlist(lapply(c("Bio1", "Bio12"), function(nm) {
 set.seed(1896)
 Rnd_rare_map <- lapply(Sampl_effort, function(N) {
   res <- replicate(n = 100, expr = Random_mapping(y = D.tundrae.bin.AOI, x = Chelsa.AOI, 
-                                                  x_crds =  Climate_crds, n = N, min_p = 30), simplify = F)
+                                                  x_crds =  Climate_crds,
+                                                  Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                  n = N, min_p = 30), simplify = F)
   return(res)
 })
 
@@ -664,7 +666,9 @@ ggplot(Rnd_rare_map.fit, aes(x = var_val, y = fit)) +
 
 set.seed(1922)
 Str_rare_map <- lapply(Sampl_effort, function(N) {
-  res <- replicate(n = 100, expr = Strat_mapping(y = D.tundrae.bin.AOI, x = Chelsa.AOI, n = N,
+  res <- replicate(n = 100, expr = Strat_mapping(y = D.tundrae.bin.AOI, x = Chelsa.AOI,
+                                                 Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                 n = N,
                                                  strata = Bio1_12.rcl.qrt.AOI, min_p = 30), simplify = F)
   return(res)
 })
@@ -698,6 +702,7 @@ ggplot(Str_rare_map.fit, aes(x = var_val, y = fit)) +
 set.seed(1942)
 Prox_rare_map <- lapply(Sampl_effort, function(N) {
   res <- replicate(n = 100, expr = Proximity_mapping(y = D.tundrae.bin.AOI, x = Chelsa.AOI,
+                                                     Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
                                                      prox_lay = Abr_highway_AOI, n = N, min_p = 30), simplify = F)
   return(res)
 })
@@ -733,6 +738,7 @@ Unif_rare_map <- lapply(Sampl_effort, function(N) {
   res <- replicate(n = 100, expr = Uniform_mapping(y = D.tundrae.bin.AOI,
                                                    x = Chelsa.AOI,
                                                    x_sdf = Chelsa.AOI.df.sp,
+                                                   Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
                                                    n = N, rsl = 10, min_p = 30), simplify = F)
   return(res)
 })
@@ -766,7 +772,9 @@ ggplot(Unif_rare_map.fit, aes(x = var_val, y = fit)) +
 set.seed(1964)
 Syst_rare_map <- lapply(Sampl_effort, function(n) {
   res <- replicate(n = 100, expr = Systematic_mapping(y = D.tundrae.bin.AOI, x = Chelsa.stack.syst,
-                                                      N = n, perc_inc = 0.07, poly_proj = Elev_AOI.proj, min_p = 30), simplify = F)
+                                                      N = n, perc_inc = 0.07, poly_proj = Elev_AOI.proj,
+                                                      Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                      min_p = 30), simplify = F)
   return(res)
 })
 
@@ -799,7 +807,9 @@ ggplot(Syst_rare_map.fit, aes(x = var_val, y = fit)) +
 set.seed(1952)
 Topo_rare_map <- lapply(Sampl_effort, function(n.) {
   res <- replicate(n = 100, expr = Topo_mapping(y = D.tundrae.bin.AOI, x = Chelsa.AOI,
-                                                N = n., perc_inc = 0.07, topo_layer = Topogr_het_Abr.AOI, min_p = 30),
+                                                N = n., perc_inc = 0.07, topo_layer = Topogr_het_Abr.AOI,
+                                                Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                min_p = 30),
                    simplify = F)
 })
 
@@ -831,7 +841,8 @@ ggplot(Topo_rare_map.fit, aes(x = var_val, y = fit)) +
 RespCurves.df.rare <- data.frame(rbind(Rnd_rare_map.fit, Str_rare_map.fit, Prox_rare_map.fit,
                                        Syst_rare_map.fit, Topo_rare_map.fit, Unif_rare_map.fit),
                                  Typ = rep(c("Rnd", "Str", "Prx", "Syst", "Topo", "Unif"),
-                                           each = nrow(Rnd_rare_map.fit)))
+                                           times = sapply(list(Rnd_rare_map.fit, Str_rare_map.fit, Prox_rare_map.fit,
+                                                               Syst_rare_map.fit, Topo_rare_map.fit, Unif_rare_map.fit), nrow)))
 
 RespCurves.df.rare$Typ <- factor(RespCurves.df.rare$Typ,
                                  levels = c("Rnd", "Str", "Prx", "Unif", "Syst", "Topo"))

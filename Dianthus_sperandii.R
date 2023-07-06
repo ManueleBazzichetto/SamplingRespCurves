@@ -1,4 +1,4 @@
-##Code to replicate results presented in the manuscript "Sampling strategies matter to accurately estimate response curves’ parameters in species distribution models"
+##Code to replicate results presented in the manuscript "Sampling strategy matters to accurately estimate response curves’ parameters in species distribution models"
 ##Simulations for Dianthus sperandii (virtual species with wide distribution)
 
 ##!!Please, load packages reported at the top of the "Bio_Elev_data" script!!
@@ -573,6 +573,16 @@ Var_plot <- ggplot(Var_df, aes(x = N, y = RMSE, group = Type, col = Type)) +
 
 #PREDICTED VS TRUE SPECIES RESPONSE CURVES--------------------------------------------------------------------------------------
 
+#Function for computing estimated probability as a function of temperature and precipitation
+Get_fitted_vals <- function(fit_mod, con_val) {
+  list_of_fitted <- ggpredict(fit_mod, condition = con_val)
+  df_for_bio1 <- as.data.frame(list_of_fitted[["Bio1"]])
+  df_for_bio12 <- as.data.frame(list_of_fitted[["Bio12"]])
+  colnames(df_for_bio1) <- colnames(df_for_bio12) <- c("var_val", "fit", "se", "lower", "upper", "var")
+  df_final <- rbind(df_for_bio1, df_for_bio12)
+  return(df_final)
+}
+
 #Compute true probabilities for D. sperandii
 True_pred_sperandii.2 <- data.frame(var_val = c(Bio1_seq.AOI, Bio12_seq.AOI),
                                     var = rep(c("Bio1", "Bio12"),
@@ -583,13 +593,13 @@ True_pred_sperandii.2$Proba <- unlist(lapply(c("Bio1", "Bio12"), function(nm) {
   if(nm %in% "Bio1") {
     mat.prd <- cbind(1, True_pred_sperandii.2[True_pred_sperandii.2$var == "Bio1", "var_val", drop = T],
                      (True_pred_sperandii.2[True_pred_sperandii.2$var == "Bio1", "var_val", drop = T]^2),
-                     mean(True_pred_sperandii.2[True_pred_sperandii.2$var == "Bio12", "var_val", drop = T]))
+                     MeanPrec.AOI)
     #colnames(mat.prd) <- NULL
     pred_val <- plogis(mat.prd%*%unname(True_coef.S.nm))
     return(pred_val)
   } else {
-    mat.prd <- cbind(1, mean(True_pred_sperandii.2[True_pred_sperandii.2$var == "Bio1", "var_val", drop = T]),
-                     median(True_pred_sperandii.2[True_pred_sperandii.2$var == "Bio1", "var_val", drop = T])^2,
+    mat.prd <- cbind(1, MeanTemp.AOI,
+                     MeanTemp.AOI^2,
                      True_pred_sperandii.2[True_pred_sperandii.2$var == "Bio12", "var_val", drop = T])
     #colnames(mat.prd) <- NULL
     pred_val <- plogis(mat.prd%*%unname(True_coef.S.nm))
@@ -598,8 +608,8 @@ True_pred_sperandii.2$Proba <- unlist(lapply(c("Bio1", "Bio12"), function(nm) {
 }))
 
 #RANDOM
-Random_mapping <- function(y, x, x_crds, n = 300, min_p = 30) {
-  require(effects)
+Random_mapping <- function(y, x, x_crds, Con_val, n = 300, min_p = 30) {
+  require(ggeffects)
   npres <- T
   while(npres) {
     Random_plots <- x_crds[sample(nrow(x_crds), n, replace = F), ]
@@ -612,20 +622,16 @@ Random_mapping <- function(y, x, x_crds, n = 300, min_p = 30) {
   Mod <- glm(PA ~ Bio1 + I(Bio1^2) + Bio12, family = binomial, data = Fake_df)
   Map <- raster::predict(Chelsa.AOI, model = Mod, type = "response")
   #get fitted for partial effects
-  Partial_fit <- as.data.frame(effects::predictorEffects(Mod))
-  Partial_fit <- do.call(rbind, lapply(names(Partial_fit), function(nm) {
-    df <- Partial_fit[[nm]]
-    df$var <- nm
-    colnames(df)[1] <- "var_val"
-    return(df)
-  }))
+  Partial_fit <- Get_fitted_vals(fit_mod = Mod, con_val = Con_val)
   return(list(Map = Map, Part_fit = Partial_fit, SampSz = nrow(Fake_df)))
 }
 
 set.seed(2890)
 Random_map <- lapply(Sampl_effort, function(N) {
   res <- replicate(n = 100, expr = Random_mapping(y = D.sperandii.bin.AOI, x = Chelsa.AOI, 
-                                                  x_crds =  Climate_crds, n = N, min_p = 30), simplify = F)
+                                                  x_crds =  Climate_crds,
+                                                  Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                  n = N, min_p = 30), simplify = F)
   return(res)
 })
 
@@ -656,7 +662,7 @@ ggplot(Random_map.fit, aes(x = var_val, y = fit)) +
 
 #STRATIFIED
 
-Strat_mapping <- function(y, x, n = 300, strata, min_p = 30) {
+Strat_mapping <- function(y, x, Con_val, n = 300, strata, min_p = 30) {
   npres <- T
   while(npres) {
     Strat_plots <- Strat_raster(x = strata, N = n)
@@ -667,19 +673,15 @@ Strat_mapping <- function(y, x, n = 300, strata, min_p = 30) {
   }
   Mod <- glm(PA ~ Bio1 + I(Bio1^2) + Bio12, family = binomial, data = Fake_df)
   Map <- raster::predict(Chelsa.AOI, model = Mod, type = "response")
-  Partial_fit <- as.data.frame(effects::predictorEffects(Mod))
-  Partial_fit <- do.call(rbind, lapply(names(Partial_fit), function(nm) {
-    df <- Partial_fit[[nm]]
-    df$var <- nm
-    colnames(df)[1] <- "var_val"
-    return(df)
-  }))
+  Partial_fit <- Get_fitted_vals(fit_mod = Mod, con_val = Con_val)
   return(list(Map = Map, Part_fit = Partial_fit, SampSz = nrow(Fake_df)))
 }
 
 set.seed(2931)
 Strat_map <- lapply(Sampl_effort, function(N) {
-  res <- replicate(n = 100, expr = Strat_mapping(y = D.sperandii.bin.AOI, x = Chelsa.AOI, n = N,
+  res <- replicate(n = 100, expr = Strat_mapping(y = D.sperandii.bin.AOI, x = Chelsa.AOI,
+                                                 Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                 n = N,
                                                  strata = Bio1_12.rcl.qrt.AOI, min_p = 30), simplify = F)
   return(res)
 })
@@ -710,7 +712,7 @@ ggplot(Strat_map.fit, aes(x = var_val, y = fit)) +
 
 #ROAD PROXIMITY
 
-Proximity_mapping <- function(y, x, prox_lay, n = 300, min_p = 30) {
+Proximity_mapping <- function(y, x, prox_lay, Con_val, n = 300, min_p = 30) {
   Prox_df.full <- na.omit(as.data.frame(prox_lay, xy = T))
   npres <- T
   while(npres) {
@@ -723,19 +725,14 @@ Proximity_mapping <- function(y, x, prox_lay, n = 300, min_p = 30) {
   }
   Mod <- glm(PA ~ Bio1 + I(Bio1^2) + Bio12, family = binomial, data = Fake_df)
   Map <- raster::predict(Chelsa.AOI, model = Mod, type = "response")
-  Partial_fit <- as.data.frame(effects::predictorEffects(Mod))
-  Partial_fit <- do.call(rbind, lapply(names(Partial_fit), function(nm) {
-    df <- Partial_fit[[nm]]
-    df$var <- nm
-    colnames(df)[1] <- "var_val"
-    return(df)
-  }))
+  Partial_fit <- Get_fitted_vals(fit_mod = Mod, con_val = Con_val)
   return(list(Map = Map, Part_fit = Partial_fit, SampSz = nrow(Fake_df)))
 }
 
 set.seed(4094)
 Prox_map <- lapply(Sampl_effort, function(N) {
   res <- replicate(n = 100, expr = Proximity_mapping(y = D.sperandii.bin.AOI, x = Chelsa.AOI,
+                                                     Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
                                                      prox_lay = Abr_highway_AOI, n = N, min_p = 30), simplify = F)
   return(res)
 })
@@ -766,7 +763,7 @@ ggplot(Prox_map.fit, aes(x = var_val, y = fit)) +
 
 #UNIFORM
 
-Uniform_mapping <- function(y, x, x_sdf, n = 300, rsl, min_p = 30) {
+Uniform_mapping <- function(y, x, x_sdf, Con_val, n = 300, rsl, min_p = 30) {
   npres <- T
   while(npres) {
     Uniform_points <- Unif_sampl(x = x_sdf, N = n, rsl = rsl)
@@ -777,13 +774,7 @@ Uniform_mapping <- function(y, x, x_sdf, n = 300, rsl, min_p = 30) {
   }
   Mod <- glm(PA ~ Bio1 + I(Bio1^2) + Bio12, family = binomial, data = Fake_df)
   Map <- raster::predict(Chelsa.AOI, model = Mod, type = "response")
-  Partial_fit <- as.data.frame(effects::predictorEffects(Mod))
-  Partial_fit <- do.call(rbind, lapply(names(Partial_fit), function(nm) {
-    df <- Partial_fit[[nm]]
-    df$var <- nm
-    colnames(df)[1] <- "var_val"
-    return(df)
-  }))
+  Partial_fit <- Get_fitted_vals(fit_mod = Mod, con_val = Con_val)
   return(list(Map = Map, Part_fit = Partial_fit, SamplSz = nrow(Fake_df)))
 }
 
@@ -792,6 +783,7 @@ Unif_map <- lapply(Sampl_effort, function(N) {
   res <- replicate(n = 100, expr = Uniform_mapping(y = D.sperandii.bin.AOI,
                                                    x = Chelsa.AOI,
                                                    x_sdf = Chelsa.AOI.df.sp,
+                                                   Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
                                                    n = N, rsl = 10, min_p = 30), simplify = F)
   return(res)
 })
@@ -822,7 +814,7 @@ ggplot(Unif_map.fit, aes(x = var_val, y = fit)) +
 
 #SYSTEMATIC
 
-Systematic_mapping <- function(y, x, N, perc_inc, poly_proj, min_p = 30) {
+Systematic_mapping <- function(y, x, N, perc_inc, poly_proj, Con_val, min_p = 30) {
   npres <- T
   while(npres) {
     Pts_syst <- st_sample(x = poly_proj, size = N + floor(N*perc_inc), type = "regular")
@@ -838,20 +830,16 @@ Systematic_mapping <- function(y, x, N, perc_inc, poly_proj, min_p = 30) {
   }
   Mod <- glm(PA ~ Bio1 + I(Bio1^2) + Bio12, family = binomial, data = Fake_df)
   Map <- raster::predict(Chelsa.AOI, model = Mod, type = "response")
-  Partial_fit <- as.data.frame(effects::predictorEffects(Mod))
-  Partial_fit <- do.call(rbind, lapply(names(Partial_fit), function(nm) {
-    df <- Partial_fit[[nm]]
-    df$var <- nm
-    colnames(df)[1] <- "var_val"
-    return(df)
-  }))
+  Partial_fit <- Get_fitted_vals(fit_mod = Mod, con_val = Con_val)
   return(list(Map = Map, Part_fit = Partial_fit, SamplSz = nrow(Fake_df)))
 }
 
 set.seed(2948)
 Syst_map <- lapply(Sampl_effort, function(n) {
   res <- replicate(n = 100, expr = Systematic_mapping(y = D.sperandii.bin.AOI, x = Chelsa.stack.syst,
-                                                      N = n, perc_inc = 0.07, poly_proj = Elev_AOI.proj, min_p = 30), simplify = F)
+                                                      N = n, perc_inc = 0.07, poly_proj = Elev_AOI.proj,
+                                                      Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                      min_p = 30), simplify = F)
   return(res)
 })
 
@@ -880,7 +868,7 @@ ggplot(Syst_map.fit, aes(x = var_val, y = fit)) +
   theme_classic()
 
 #TOPOGRAPHIC
-Topo_mapping <- function(y, x, N, perc_inc, topo_layer, min_p = 30) {
+Topo_mapping <- function(y, x, N, perc_inc, topo_layer, Con_val, min_p = 30) {
   Topo_lyr.df <- as.data.frame(topo_layer, xy = T, na.rm = T)
   npres <- T
   while(npres) {
@@ -895,20 +883,16 @@ Topo_mapping <- function(y, x, N, perc_inc, topo_layer, min_p = 30) {
   }
   Mod <- glm(PA ~ Bio1 + I(Bio1^2) + Bio12, family = binomial, data = Fake_df)
   Map <- raster::predict(Chelsa.AOI, model = Mod, type = "response")
-  Partial_fit <- as.data.frame(effects::predictorEffects(Mod))
-  Partial_fit <- do.call(rbind, lapply(names(Partial_fit), function(nm) {
-    df <- Partial_fit[[nm]]
-    df$var <- nm
-    colnames(df)[1] <- "var_val"
-    return(df)
-  }))
+  Partial_fit <- Get_fitted_vals(fit_mod = Mod, con_val = Con_val)
   return(list(Map = Map, Part_fit = Partial_fit, SampSz = nrow(Fake_df)))
 }
 
 set.seed(2441)
 Topo_map <- lapply(Sampl_effort, function(n.) {
   res <- replicate(n = 100, expr = Topo_mapping(y = D.sperandii.bin.AOI, x = Chelsa.AOI,
-                                                N = n., perc_inc = 0.07, topo_layer = Topogr_het_Abr.AOI, min_p = 30),
+                                                N = n., perc_inc = 0.07, topo_layer = Topogr_het_Abr.AOI,
+                                                Con_val = c(Bio1 = MeanTemp.AOI, Bio12 = MeanPrec.AOI),
+                                                min_p = 30),
                    simplify = F)
 })
 
@@ -936,10 +920,16 @@ ggplot(Topo_map.fit, aes(x = var_val, y = fit)) +
   ylab("Occurrence probability") + xlab(NULL) +
   theme_classic()
 
+#Create list with maps of predicted values
+List_pred_map <- list(RM = Random_map.lyr, StrM = Strat_map.lyr, PxM = Prox_map.lyr,
+                      UM = Unif_map.lyr, SysM = Syst_map.lyr, TM = Topo_map.lyr)
+
 #Figure showing predicted vs true response curves
 RespCurves.df <- data.frame(rbind(Random_map.fit, Strat_map.fit, Prox_map.fit,
                                   Unif_map.fit, Syst_map.fit, Topo_map.fit),
-                            Typ = rep(names(List_pred_map), each = nrow(Random_map.fit)))
+                            Typ = rep(names(List_pred_map),
+                                      times = sapply(list(Random_map.fit, Strat_map.fit, Prox_map.fit,
+                                                          Unif_map.fit, Syst_map.fit, Topo_map.fit), nrow)))
 
 
 Sampl_label <- c("RM" = "Random", "StrM" = "Stratified", "PxM" = "Proximity",

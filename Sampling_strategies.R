@@ -1,4 +1,4 @@
-##Code to replicate results presented in the manuscript "Sampling strategies matter to accurately estimate response curves’ parameters in species distribution models"
+##Code to replicate results presented in the manuscript "Sampling strategy matters to accurately estimate response curves’ parameters in species distribution models"
 ##Data and (R) functions for implementing the following sampling approaches: stratified, uniform, topographic, proximity-to-road
 ##Random and systematic approaches are directly implemented in the simulations' script
 

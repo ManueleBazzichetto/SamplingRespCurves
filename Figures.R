@@ -1,4 +1,4 @@
-##Code to replicate results presented in the manuscript "Sampling strategies matter to accurately estimate response curves’ parameters in species distribution models"
+##Code to replicate results presented in the manuscript "Sampling strategy matters to accurately estimate response curves’ parameters in species distribution models"
 ##Figures
 
 #Reproduce some of the figures reported in the manuscript
@@ -16,8 +16,8 @@ Plot_bio1 <- data.frame(Temperature = rep(Bio1_seq, 2),
                         Species = rep(c("D. sperandii", "D. tundrae"), each = length(Bio1_seq)))
 
 Plot_bio12 <- data.frame(Precipitation = rep(Bio12_seq, 2),
-                         Proba = plogis(c(cbind(1, Bio12_seq)%*%c((-11.3886498 + 1.3835909*cellStats(Chelsa.stack$Bio1, 'mean') - 0.0920092*cellStats(Chelsa.stack$Bio1^2, 'mean')), 0.0071542),
-                                          cbind(1, Bio12_seq)%*%c((-22.17261596 + 3.77916980*cellStats(Chelsa.stack$Bio1, 'mean') - 0.20996874*cellStats(Chelsa.stack$Bio1^2, 'mean')), 0.00490439))),
+                         Proba = plogis(c(cbind(1, Bio12_seq)%*%c((-11.3886498 + 1.3835909*cellStats(Chelsa.stack$Bio1, 'mean') - 0.0920092*(cellStats(Chelsa.stack$Bio1, 'mean')^2)), 0.0071542),
+                                          cbind(1, Bio12_seq)%*%c((-22.17261596 + 3.77916980*cellStats(Chelsa.stack$Bio1, 'mean') - 0.20996874*(cellStats(Chelsa.stack$Bio1, 'mean')^2)), 0.00490439))),
                          Species = rep(c("D. sperandii", "D. tundrae"), each = length(Bio12_seq)))
 
 #bio1

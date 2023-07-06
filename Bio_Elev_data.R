@@ -1,4 +1,4 @@
-##Code to replicate results presented in the manuscript "Sampling strategies matter to accurately estimate response curves’ parameters in species distribution models"
+##Code to replicate results presented in the manuscript "Sampling strategy matters to accurately estimate response curves’ parameters in species distribution models"
 ##Extraction and processing of altitude and climatic data
 
 
@@ -7,6 +7,7 @@ library(rnaturalearth)
 library(raster)
 library(sf)
 library(car)
+library(ggeffects)
 library(mapview)
 library(ggplot2)
 library(ggpubr)
@@ -126,3 +127,11 @@ Chelsa.AOI <- mask(Chelsa.stack, mask = as(Elev_AOI, "Spatial"))
 #Sequences of Bio1 and Bio12 values. These will be used for generating true response curves for the species in the simulations
 Bio1_seq.AOI <- seq(from = minValue(Chelsa.AOI$Bio1), to = maxValue(Chelsa.AOI$Bio1), length.out = 100)
 Bio12_seq.AOI <- seq(from = minValue(Chelsa.AOI$Bio12), to = maxValue(Chelsa.AOI$Bio12), length.out = 100)
+
+#Sequences of Bio1 and Bio12 values for the whole study area. These will be used in the "Figures" script for "FigSimRespCurve".
+Bio1_seq <- seq(cellStats(Chelsa.stack$Bio1, "min"), cellStats(Chelsa.stack$Bio1, "max"), .1)
+Bio12_seq <- seq(cellStats(Chelsa.stack$Bio12, "min"), cellStats(Chelsa.stack$Bio12, "max"), .1)
+
+#Get mean value for Bio1 and Bio12 in the AOI
+MeanTemp.AOI <- cellStats(Chelsa.AOI$Bio1, "mean") 
+MeanPrec.AOI <- cellStats(Chelsa.AOI$Bio12, "mean")
